@@ -1,0 +1,259 @@
+@import "tailwindcss";
+
+/* ───────── Design Tokens BUILDERZ ───────── */
+@theme {
+  /* Escala azul derivada del azul de marca #052941 */
+  --color-bg: #03121e;        /* fondo principal (navy 950) */
+  --color-bg-2: #061f33;      /* secciones alternadas (navy 900) */
+  --color-navy: #052941;      /* azul de marca: Hero, bloque de contacto */
+  --color-surface: #0a2a42;   /* tarjetas / contenedores */
+  --color-accent: #dbf227;    /* CTA, hover, destacados (color oficial del logo) */
+  --color-accent-2: #00e5ff;  /* decorativo, micro-interacciones */
+  --color-fg: #ffffff;        /* títulos */
+  --color-muted: #a3b5c6;     /* cuerpo (gris azulado frío) */
+  --color-line: #1f4a6b;      /* bordes decorativos */
+
+  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Tipografía fluida (mobile → desktop) */
+  --text-display: clamp(2.25rem, 1.3rem + 4vw, 4.25rem);
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-h2: clamp(1.875rem, 1.4rem + 2.4vw, 3.25rem);
+  --text-h2--line-height: 1.1;
+  --text-h2--letter-spacing: -0.02em;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Entradas del Hero. rise-y no toca opacity: el H1 es el LCP y debe pintarse ya. */
+  --animate-rise: rise 0.7s var(--ease-out-expo) both;
+  --animate-rise-y: rise-y 0.7s var(--ease-out-expo) both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+  }
+  @keyframes rise-y {
+    from { transform: translateY(12px); }
+  }
+
+  /* BlurText (inspirado en React Bits). Sin opacity: el H1 se pinta de entrada (LCP). */
+  --animate-blur-in: blur-in 0.8s var(--ease-out-expo) both;
+  @keyframes blur-in {
+    from { filter: blur(12px); transform: translateY(-0.3em); }
+    55% { filter: blur(3px); }
+    to { filter: blur(0); transform: none; }
+  }
+
+  --animate-marquee: marquee 90s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 90s linear infinite;
+
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+  @keyframes marquee-reverse {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+
+  /* Aurora del CTA final: deriva lenta tipo "thinking glow" (inspirado en el indicador de
+     pensamiento de Gemini). Dos velocidades/fases para que las dos capas no se muevan en sync. */
+  --animate-aurora: aurora-drift 14s var(--ease-out-expo) infinite alternate;
+  --animate-aurora-slow: aurora-drift 22s var(--ease-out-expo) infinite alternate-reverse;
+  @keyframes aurora-drift {
+    0% { transform: translate(-6%, 4%) scale(1); }
+    50% { transform: translate(5%, -5%) scale(1.18); }
+    100% { transform: translate(-4%, 6%) scale(1.05); }
+  }
+}
+
+/* Orbiting Circles (Magic UI: https://magicui.design/docs/components/orbiting-circles).
+   Una sola animación: rota hacia el ángulo del ítem, lo empuja al radio y vuelve a rotar en
+   sentido contrario para que quede "parado" en vez de girar sobre sí mismo.
+   Nota: la animación NO se define como token --animate-* en @theme a propósito. Cuando
+   --duration/--radius/--angle se fijan inline en el propio elemento, Chromium no resuelve
+   bien un var() anidado dentro de otro custom property de :root (--animate-orbit → var(--duration)):
+   la propiedad "animation" queda en none. Poniendo el calc()/var() directo en la clase (un
+   solo nivel de indirección) funciona correctamente — verificado con un repro mínimo. */
+@keyframes orbit {
+  0% {
+    transform: rotate(calc(var(--angle) * 1deg)) translateY(var(--radius)) rotate(calc(var(--angle) * -1deg));
+  }
+  100% {
+    transform: rotate(calc(var(--angle) * 1deg + 360deg)) translateY(var(--radius)) rotate(calc((var(--angle) * -1deg) - 360deg));
+  }
+}
+.orbit-item {
+  animation: orbit calc(var(--duration) * 1s) linear infinite;
+}
+.orbit-item[data-reverse="true"] {
+  animation-direction: reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbit-item { animation: none; }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  @media (max-width: 767px) {
+    html { scroll-padding-bottom: 6rem; }
+  }
+  p {
+    text-wrap: pretty;
+  }
+  body {
+    @apply bg-bg text-muted font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-heading text-fg text-balance;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+  ::selection {
+    @apply bg-accent text-bg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Reveal on scroll (sin librería). Sin JS o con reduced-motion, el contenido se ve igual. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+  }
+  .reveal:not([data-visible]) {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* ───────── Efectos (recreados en CSS, sin librerías) ───────── */
+
+/* Spotlight que sigue al puntero (inspirado en Magic UI MagicCard). Solo mouse/trackpad. */
+@media (hover: hover) and (pointer: fine) {
+  [data-spotlight] {
+    isolation: isolate;
+  }
+  [data-spotlight]::before,
+  [data-spotlight]::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+  /* Borde iluminado */
+  [data-spotlight]::before {
+    inset: -1px;
+    padding: 1px;
+    background: radial-gradient(240px circle at var(--mx, -999px) var(--my, -999px), var(--color-accent), transparent 70%);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+  }
+  /* Brillo interior, detrás del contenido */
+  [data-spotlight]::after {
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(320px circle at var(--mx, -999px) var(--my, -999px), color-mix(in oklab, var(--color-accent) 9%, transparent), transparent 70%);
+  }
+  [data-spotlight]:hover::before,
+  [data-spotlight]:hover::after {
+    opacity: 1;
+  }
+}
+
+/* Haz de luz que recorre el borde (inspirado en Magic UI BorderBeam). */
+.border-beam {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid transparent;
+  pointer-events: none;
+  mask-image: linear-gradient(transparent, transparent), linear-gradient(#000, #000);
+  mask-clip: padding-box, border-box;
+  mask-composite: intersect;
+}
+.border-beam::after {
+  content: "";
+  position: absolute;
+  width: 140px;
+  aspect-ratio: 1;
+  background: linear-gradient(to left, var(--color-accent), var(--color-accent-2), transparent);
+  offset-path: rect(0 auto auto 0 round 140px);
+  animation: beam 9s linear infinite;
+}
+@keyframes beam {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+/* Brillo que cruza el botón (inspirado en Magic UI ShinyButton). */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(-75deg, transparent 35%, rgb(255 255 255 / 0.6) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: shine 3.5s var(--ease-out-expo) 1.5s infinite;
+  pointer-events: none;
+}
+@keyframes shine {
+  0% { transform: translateX(-120%); }
+  40%, 100% { transform: translateX(120%); }
+}
+
+/* Línea de proceso que se llena con el scroll (inspirado en Aceternity Timeline).
+   Scroll-driven animation nativa: sin JS. Donde no hay soporte, la línea queda estática. */
+.timeline-fill {
+  transform-origin: top;
+  transform: scaleY(0);
+}
+@media (min-width: 768px) {
+  .timeline-fill { transform-origin: left; transform: scaleX(0); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .timeline-fill {
+      animation: fill-y linear both;
+      animation-timeline: view();
+      animation-range: entry 30% cover 55%;
+    }
+    @media (min-width: 768px) {
+      .timeline-fill { animation-name: fill-x; }
+    }
+  }
+}
+@supports not (animation-timeline: view()) {
+  .timeline-fill { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timeline-fill { transform: none; }
+}
+@keyframes fill-y { to { transform: scaleY(1); } }
+@keyframes fill-x { to { transform: scaleX(1); } }
+

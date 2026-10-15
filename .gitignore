@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.env*.local
+.vercel
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+!.env.example
+.playwright-mcp
+_to_delete/
+*.zip
